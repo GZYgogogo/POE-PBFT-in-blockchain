@@ -60,7 +60,6 @@ func InitPBFT(nodeId string) *PBFTNode {
 }
 
 func (node *PBFTNode) GetReq(reqMsg *RequestMessage) (*PrePrepareMessage, error) {
-	// LogMsg(reqMsg)
 
 	// Create a new state for the new consensus.
 	err := node.createStateForNewConsensus()
@@ -74,9 +73,7 @@ func (node *PBFTNode) GetReq(reqMsg *RequestMessage) (*PrePrepareMessage, error)
 	if err != nil {
 		return nil, err
 	}
-
-	// LogStage(fmt.Sprintf("Consensus Process (ViewID:%d)", node.CurrentState.ViewID), false)
-
+	node.Sequence = prePrepareMsg.SequenceID
 	// Send getPrePrepare message
 	if prePrepareMsg == nil {
 		// node.Broadcast(prePrepareMsg, "/preprepare")
@@ -110,6 +107,7 @@ func (node *PBFTNode) GetPrePrepare(prePrepareMsg *PrePrepareMessage) (*VoteMess
 	prePareMsg.NodeID = node.NodeID
 	prePareMsg.RequestMsg = prePrepareMsg.RequestMsg
 	// fmt.Printf("[prepare-Vote]: %+v\n", prePareMsg)
+	node.Sequence = prePareMsg.SequenceID
 	return prePareMsg, nil
 }
 
@@ -128,8 +126,10 @@ func (node *PBFTNode) GetPrepare(prepareMsg *VoteMessage) (*VoteMessage, error) 
 }
 
 func (node *PBFTNode) GetCommit(commitMsg *VoteMessage) (*ReplyMessage, error) {
-	// LogMsg(commitMsg)
-	// fmt.Printf("commitMsg => %+v\n", commitMsg)
+	// 已投票的会置CurrentState为nil
+	if node.CurrentState == nil {
+		return nil, errors.New("already committed")
+	}
 	replyMsg, committedMsg, err := node.CurrentState.Commit(commitMsg)
 	// fmt.Printf("replyMessage => %+v; committedMsg => %+v; err => %v\n", replyMsg, committedMsg, err)
 	if err != nil {

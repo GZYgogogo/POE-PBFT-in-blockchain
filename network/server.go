@@ -18,7 +18,7 @@ import (
 	"github.com/go-kit/log"
 )
 
-var defaultBlockTime = time.Second * 5
+var defaultBlockTime = time.Millisecond * 100
 
 type ServerOpts struct {
 	ID            string
@@ -209,7 +209,7 @@ func (s *Server) ProcessMessage(msg *DecodedMessage) error {
 // }
 
 func (s *Server) processPrePrepareMessage(from string, data *PrePrepareMessage) error {
-	fmt.Printf("%s receive preprepare message from %s\n", s.Transport.Addr(), from)
+	// fmt.Printf("%s receive preprepare message from %s\n", s.Transport.Addr(), from)
 
 	// TODO：GetPrePrepare内验证block的合法性，不合法不同意，就不要继续发送了
 	Block := new(core.Block)
@@ -280,9 +280,10 @@ func (s *Server) processVoteMessage(from string, data *VoteMessage) error {
 			return err
 		}
 		// 清理共识的CurrentState，为下一轮共识做准备
-		// s.PBFTNode.CurrentState = &State{}
-		// fmt.Printf("%s PBFTNode: %+v\n", s.Transport.Addr(), )
-		fmt.Printf("%s PBFTNode: %+v,state %+v\n", s.Transport.Addr(), s.PBFTNode, s.PBFTNode.CurrentState)
+		// fmt.Printf("11111111111111111111 %s PBFTNode : %+v\n", s.Transport.Addr(), s.PBFTNode.CurrentState.LastSequenceID)
+		s.PBFTNode.CurrentState = nil
+
+		// fmt.Printf("%s PBFTNode: %+v,Sequence %+v\n", s.Transport.Addr(), s.PBFTNode, s.PBFTNode.Sequence)
 		return s.Transport.SendMessage("LOCAL", msg.Bytes())
 	default:
 		return errors.New("unknown message consensus type")
@@ -506,13 +507,14 @@ func (s *Server) createNewBlock() error {
 	// go s.BroadcastBlock(block)
 	go func(error) {
 		err = s.StartConsensus(block)
-		s.Logger.Log("error", err)
+		// s.Logger.Log("error", err)
 		return
 	}(err)
 	return err
 }
 
 func (s *Server) StartConsensus(block *core.Block) error {
+	s.PBFTNode.CurrentState = nil
 	jsonBlock, err := json.Marshal(block)
 	if err != nil {
 		return err

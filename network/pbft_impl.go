@@ -62,7 +62,6 @@ func (state *State) StartConsensus(request *RequestMessage) (*PrePrepareMessage,
 
 	// Assign a new sequence ID to the request message object.
 	request.SequenceID = sequenceID
-
 	// Save ReqMsgs to its logs.
 	state.MsgLogs.ReqMsg = request
 	// fmt.Printf("start consensus: %+v\n", request)
